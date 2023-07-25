@@ -4,6 +4,39 @@ SEO Spy is a Python-based web scraping tool that functions as an SEO error
 checking tool, leveraging the capabilities of the renowned web scraper
 [Scrapy](https://scrapy.org/).
 
+## Installation
+
+Create new python virtual environment.
+
+``` bash
+$ virtualenv venv
+```
+
+Activate virtual environment.
+
+```bash
+$ source venv/bin/activate
+```
+
+Install requirements.
+
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
+usage: main.py [-h] -d DOMAIN -o
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DOMAIN, --domain DOMAIN
+                        URL of the tested domain. Examples:
+                        http://127.0.0.1:8000 https://docs.dasharo.com
+  -o, --orphan          Run orphan pages check
+```
+
 ## Current features
 
 ### Orphaned Pages
@@ -17,21 +50,9 @@ to reduced visibility in search results.
 SEO Spy identifies sites that are in the site map, but have no internal links
 leading to them.
 
-#### Usage
+#### Example output
 
 ```bash
-usage: main.py [-h] -d DOMAIN -o
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -d DOMAIN, --domain DOMAIN
-                        URL of the tested domain. Examples:
-                        http://127.0.0.1:8000 https://docs.dasharo.com
-  -o, --orphan          Run orphan pages check
-```
-
-### Example output
-```
 2023-07-25 23:56:57 [orphan_pages_spider] ERROR: Orphan pages found:
 2023-07-25 23:56:57 [orphan_pages_spider] ERROR: http://127.0.0.1:8000/variants/protectli_ptx01/hardware-matrix/
 2023-07-25 23:56:57 [orphan_pages_spider] ERROR: http://127.0.0.1:8000/variants/protectli_ptx01/test-matrix/
