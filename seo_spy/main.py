@@ -4,6 +4,7 @@ import argparse
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from spiders.orphan_pages_spider import OrphanPagesSpider
+from spiders.canonical_link_spider import CanonicalLinkSpider
 
 STATUS_OK = 0
 STATUS_ERR = 1
@@ -44,6 +45,12 @@ class SeoSpy():
             "--orphan",
             action="store_true",
             help="Run orphan pages check"
+        )
+        group.add_argument(
+            "-c",
+            "--canonical",
+            action="store_true",
+            help="Run canonical links check"
         )
         return self.parser.parse_args()
 
@@ -111,6 +118,47 @@ class SeoSpy():
             print("================================================")
             return STATUS_OK
 
+    def canonical_links(self, domain):
+        """
+        Find pages with no canonical link.
+
+        Parameters:
+            self (object): The instance of the class containing this method.
+            domain (str): The domain name to be scanned for pages with no
+                          canonical link.
+
+        Returns:
+            int:
+                - 0 (STATUS_OK): If every page has canonical link.
+                - 1 (STATUS_ERR): If there was a connection issue.
+                - 2 (STATUS_FAILURE): If pages with no canonical link were
+                                      found on the domain.
+        """
+        status: int
+        settings = get_project_settings()
+        process = CrawlerProcess(settings=settings)
+        process.crawl(CanonicalLinkSpider, domain=domain)
+        crawler = list(process.crawlers)[0]
+        process.start()
+
+        status = self.check_connection(crawler)
+        if status is not STATUS_OK:
+            return STATUS_ERR
+
+        canonical_pages = crawler.stats.get_value("custom/canonical")
+        if canonical_pages:
+            print("================================================")
+            print("Pages with no canonical link found:")
+            print("================================================")
+            for page in canonical_pages:
+                print(page)
+            return STATUS_FAILURE
+        else:
+            print("================================================")
+            print("Every page has canonical link.")
+            print("================================================")
+            return STATUS_OK
+
 
 def main():
     """
@@ -134,6 +182,9 @@ def main():
     args = spy.parse_program_input()
     if args.orphan:
         status = spy.orphan_pages(args.domain)
+        exit(status)
+    elif args.canonical:
+        status = spy.canonical_links(args.domain)
         exit(status)
     else:
         spy.parser.print_help()
