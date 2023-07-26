@@ -58,6 +58,16 @@ class OrphanPagesSpider(SitemapSpider):
         In case it lacks such links, include it in the list of orphan pages.
         """
         orphan_pages = []
+        if not self._visited_pages:
+            self.logger.error(
+                "No sites visited. Check the connection to the domain."
+            )
+            self.crawler.stats.set_value(
+                "custom/connection_issue",
+                True
+            )
+            return
+
         for url in self._visited_pages:
             if not url.endswith("/"):
                 url = url + "/"
