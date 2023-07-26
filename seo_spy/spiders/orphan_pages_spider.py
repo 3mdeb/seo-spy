@@ -19,10 +19,10 @@ class OrphanPagesSpider(SitemapSpider):
                 raise ValueError(
                     "Domain URL must start with https:// or http://"
                 )
-            domain = self.__dict__["domain"]
-            allowed_domain = domain.split("//")[-1].split(":")[0]
+            self.domain = self.__dict__["domain"]
+            allowed_domain = self.domain.split("//")[-1].split(":")[0]
             self.allowed_domains = [allowed_domain]
-            self.sitemap_urls = [urljoin(domain, "sitemap.xml")]
+            self.sitemap_urls = [urljoin(self.domain, "sitemap.xml")]
 
     def parse(self, response):
         """
@@ -38,7 +38,7 @@ class OrphanPagesSpider(SitemapSpider):
                 incoming_link.startswith("https://") or
                 incoming_link.startswith("http://") or
                 incoming_link.startswith("#")
-            ):
+            ) and not incoming_link.startswith(self.domain):
                 continue
             while(incoming_link.startswith("..")):
                 link_rel = base_link.split("/")[-2] + "/"
@@ -47,8 +47,14 @@ class OrphanPagesSpider(SitemapSpider):
                 if incoming_link:
                     incoming_link = incoming_link[1:]
 
+            if(incoming_link.startswith("/")):
+                base_link = self.domain
+                incoming_link = incoming_link[1:]
+
             incoming_link = urljoin(base_link, incoming_link)
             incoming_link = incoming_link.split("#")[0]
+            if not incoming_link.endswith("/"):
+                incoming_link = incoming_link + "/"
             if incoming_link not in self._incoming_links:
                 self._incoming_links.append(incoming_link)
 
@@ -77,6 +83,7 @@ class OrphanPagesSpider(SitemapSpider):
             self.logger.info("No orphan pages found.")
         else:
             self.logger.error("Orphan pages found:")
+            self.logger.error(f"Incoming: {self._incoming_links}")
             for orphan_page in orphan_pages:
                 self.logger.error(f"{orphan_page}")
                 self.crawler.stats.set_value(

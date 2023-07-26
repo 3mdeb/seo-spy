@@ -180,6 +180,8 @@ def main():
 
     spy = SeoSpy()
     args = spy.parse_program_input()
+    if args.domain.endswith("/"):
+        args.domain = args.domain[:-1]
     if args.orphan:
         status = spy.orphan_pages(args.domain)
         exit(status)
