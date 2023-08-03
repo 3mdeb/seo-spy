@@ -4,7 +4,9 @@ import argparse
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from spiders.orphan_pages_spider import OrphanPagesSpider
+from spiders.orphan_pages_spider import OrphanPagesSpiderNoSitemap
 from spiders.canonical_link_spider import CanonicalLinkSpider
+from spiders.canonical_link_spider import CanonicalLinkSpiderNoSitemap
 
 STATUS_OK = 0
 STATUS_ERR = 1
@@ -37,6 +39,15 @@ class SeoSpy():
             help=(
                 "URL of the tested domain. Examples: "
                 "http://127.0.0.1:8000 https://docs.dasharo.com"
+            )
+        )
+        self.parser.add_argument(
+            "-n",
+            "--no-sitemap",
+            action='store_true',
+            help=(
+                "If argument is set, SEO Spy will not use sitemap to crawl a"
+                " domain."
             )
         )
         group = self.parser.add_mutually_exclusive_group(required=True)
@@ -79,13 +90,14 @@ class SeoSpy():
         else:
             return STATUS_OK
 
-    def orphan_pages(self, domain):
+    def orphan_pages(self, domain, no_sitemap=False):
         """
         Find orphan pages on the given domain.
 
         Parameters:
             self (object): The instance of the class containing this method.
             domain (str): The domain name to be scanned for orphan pages.
+            no_sitemap (bool): Do not use the sitemap to gather urls
 
         Returns:
             int:
@@ -96,7 +108,10 @@ class SeoSpy():
         status: int
         settings = get_project_settings()
         process = CrawlerProcess(settings=settings)
-        process.crawl(OrphanPagesSpider, domain=domain)
+        if no_sitemap:
+            process.crawl(OrphanPagesSpiderNoSitemap, domain=domain)
+        else:
+            process.crawl(OrphanPagesSpider, domain=domain)
         crawler = list(process.crawlers)[0]
         process.start()
 
@@ -118,7 +133,7 @@ class SeoSpy():
             print("================================================")
             return STATUS_OK
 
-    def canonical_links(self, domain):
+    def canonical_links(self, domain, no_sitemap=False):
         """
         Find pages with no canonical link.
 
@@ -126,6 +141,7 @@ class SeoSpy():
             self (object): The instance of the class containing this method.
             domain (str): The domain name to be scanned for pages with no
                           canonical link.
+            no_sitemap (bool): Do not use the sitemap to gather urls
 
         Returns:
             int:
@@ -137,7 +153,10 @@ class SeoSpy():
         status: int
         settings = get_project_settings()
         process = CrawlerProcess(settings=settings)
-        process.crawl(CanonicalLinkSpider, domain=domain)
+        if no_sitemap:
+            process.crawl(CanonicalLinkSpiderNoSitemap, domain=domain)
+        else:
+            process.crawl(CanonicalLinkSpider, domain=domain)
         crawler = list(process.crawlers)[0]
         process.start()
 
@@ -183,10 +202,10 @@ def main():
     if args.domain.endswith("/"):
         args.domain = args.domain[:-1]
     if args.orphan:
-        status = spy.orphan_pages(args.domain)
+        status = spy.orphan_pages(args.domain, args.no_sitemap)
         exit(status)
     elif args.canonical:
-        status = spy.canonical_links(args.domain)
+        status = spy.canonical_links(args.domain, args.no_sitemap)
         exit(status)
     else:
         spy.parser.print_help()
