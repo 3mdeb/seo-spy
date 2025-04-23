@@ -7,6 +7,7 @@ from spiders.orphan_pages_spider import OrphanPagesSpider
 from spiders.orphan_pages_spider import OrphanPagesSpiderNoSitemap
 from spiders.canonical_link_spider import CanonicalLinkSpider
 from spiders.canonical_link_spider import CanonicalLinkSpiderNoSitemap
+from urllib.parse import urlparse
 
 STATUS_OK = 0
 STATUS_ERR = 1
@@ -50,6 +51,14 @@ class SeoSpy():
                 " domain."
             )
         )
+        self.parser.add_argument(
+            "-i",
+            "--ignore-path",
+            nargs="+", # Accept more than one variable
+            help=(
+                "[Orphan pages only] Ignore orphan pages with provided path."
+            )
+        )
         group = self.parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
             "-o",
@@ -90,7 +99,7 @@ class SeoSpy():
         else:
             return STATUS_OK
 
-    def orphan_pages(self, domain, no_sitemap=False):
+    def orphan_pages(self, domain, no_sitemap=False, ignore_path=None):
         """
         Find orphan pages on the given domain.
 
@@ -120,6 +129,25 @@ class SeoSpy():
             return STATUS_ERR
 
         orphan_pages = crawler.stats.get_value("custom/orphan_pages")
+        # Remove ignored pages
+        if ignore_path:
+          print("================================================")
+          print("Applying ignore filters:")
+          print("================================================")
+
+          for ignore_filter in ignore_path:
+            print(f"\t{ignore_filter}")
+          
+          for orphan_page in orphan_pages[:]:
+            orphan_page_url = urlparse(orphan_page)
+            orphan_page_path = orphan_page_url.path.lstrip('/')
+            
+            for ignore_filter in ignore_path:
+              if orphan_page_path.startswith(ignore_filter.rstrip("/") + "/"):
+                orphan_pages.remove(orphan_page)
+                print(f"[Ignore] '{orphan_page}' was ignored because of the '{ignore_filter}' filter")
+                break
+                
         if orphan_pages:
             print("================================================")
             print("Orphan pages found:")
@@ -202,7 +230,7 @@ def main():
     if args.domain.endswith("/"):
         args.domain = args.domain[:-1]
     if args.orphan:
-        status = spy.orphan_pages(args.domain, args.no_sitemap)
+        status = spy.orphan_pages(args.domain, args.no_sitemap, args.ignore_path)
         exit(status)
     elif args.canonical:
         status = spy.canonical_links(args.domain, args.no_sitemap)
